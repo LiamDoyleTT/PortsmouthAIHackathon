@@ -52,7 +52,7 @@ Once created, you will need to enter the Azure AI Foundry resource and navigate 
 
 #### API
 
-1. Navigate to the window opened for the _backend_ folder
+1. Navigate to the window opened for the _api_ folder
 2. Create a .env file in the {repo root}/api folder with the following content:
 
 ```
