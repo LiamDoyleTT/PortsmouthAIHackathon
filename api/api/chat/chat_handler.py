@@ -23,11 +23,9 @@ class ChatHandler:
 
         self.project = AIProjectClient(
             credential=DefaultAzureCredential(),
-            endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'projects/councilHackathon')
+            endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/councildemo')
         
-        self.agent_greeting = self.project.agents.get_agent("")
-        self.bot_classification = self.project.agents.get_agent("")
-        self.agent_general = self.project.agents.get_agent("")
+        self.agent_master = self.project.agents.get_agent("asst_cfYWSQSe8l8QGO4Jv3qz6RQ6")
         self.thread = self.project.agents.threads.create()
     
     def trigger_api_post_request(self,url, payload):
@@ -77,9 +75,7 @@ class ChatHandler:
         
         return messages
 
-    def get_chat_response(self, input_text):
-
-        # Bot for checking conversation and checking what query is about
+    def call_agent(self, agent_id, input_text):
         message = self.project.agents.messages.create(
             thread_id=self.thread.id,
             role="user",
@@ -88,90 +84,20 @@ class ChatHandler:
 
         run = self.project.agents.runs.create_and_process(
             thread_id=self.thread.id,
-            agent_id=self.bot_classification.id)
-        
+            agent_id=agent_id
+        )
+
         messages = self.project.agents.messages.list(thread_id=self.thread.id, order=ListSortOrder.ASCENDING)
 
-        query_type = next(
-                (msg.text_messages[-1].text.value for msg in list(messages)[::-1] if msg.text_messages),
-                None
-            )
+        response = next(
+            (msg.text_messages[-1].text.value for msg in list(messages)[::-1] if msg.text_messages),
+            None
+        )
 
+        return response
 
-        if query_type == 'Undetermined':
-        # Agent for greeting customer and checking what query is about         
+    def get_chat_response(self, input_text):
 
-            message = self.project.agents.messages.create(
-                thread_id=self.thread.id,
-                role="user",
-                content=input_text
-            )
-
-            run = self.project.agents.runs.create_and_process(
-                thread_id=self.thread.id,
-                agent_id=self.agent_greeting.id)
-            
-            messages = self.project.agents.messages.list(thread_id=self.thread.id, order=ListSortOrder.ASCENDING)
-
-
-            # messages = self.parse_conversation(input_text)
-            # search_response = search_handler.get_query_response(str(input_text))
-
-
-            response = next(
-                (msg.text_messages[-1].text.value for msg in list(messages)[::-1] if msg.text_messages),
-                None
-            )
-
-            return response
-
-        elif query_type == 'Example Category 1':
-
-
-            message = self.project.agents.messages.create(
-                thread_id=self.thread.id,
-                role="user",
-                content=input_text
-            )
-
-            run = self.project.agents.runs.create_and_process(
-                thread_id=self.thread.id,
-                agent_id=self.agent_general.id)
-            
-            messages = self.project.agents.messages.list(thread_id=self.thread.id, order=ListSortOrder.ASCENDING)
-
-
-            # messages = self.parse_conversation(input_text)
-            # search_response = search_handler.get_query_response(str(input_text))
-
-            response = next(
-                (msg.text_messages[-1].text.value for msg in list(messages)[::-1] if msg.text_messages),
-                None
-            )
-
-
-            return response
-        
-        # return response
-        
-    def get_chat_completions(self, system_prompt,user_prompt): 
-        
-        prompt = ChatPromptTemplate.from_messages(
-                        [
-                            (
-                                "system",
-                                        system_prompt,
-                            ),
-                            ("user", user_prompt)
-                        ] 
-                    )
-
-        chain = prompt | self.llm
-        response = chain.invoke(
-                        {
-                            "user_prompt": user_prompt,
-                            "system_prompt": system_prompt
-                        }
-                    )
+        response = self.call_agent(self.agent_master.id, input_text)
 
         return response.content
