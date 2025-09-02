@@ -23,9 +23,9 @@ class ChatHandler:
 
         self.project = AIProjectClient(
             credential=DefaultAzureCredential(),
-            endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/councildemo')
+            endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/firstProject')
         
-        self.agent_master = self.project.agents.get_agent("asst_cfYWSQSe8l8QGO4Jv3qz6RQ6")
+        self.agent_master = self.project.agents.get_agent("asst_auBBqrhcSppyJ1wMJyY5qdmK")
         self.thread = self.project.agents.threads.create()
     
     def trigger_api_post_request(self,url, payload):
@@ -100,4 +100,4 @@ class ChatHandler:
 
         response = self.call_agent(self.agent_master.id, input_text)
 
-        return response.content
+        return response
