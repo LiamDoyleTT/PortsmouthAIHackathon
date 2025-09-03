@@ -2,22 +2,38 @@ import os
 import requests
 
 from types import SimpleNamespace
-
+from openai import AzureOpenAI
 
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
-from azure.ai.agents.models import ListSortOrder
+from azure.ai.agents.models import ListSortOrder, FunctionTool, ToolSet
+from api.actions.get_username import is_vip
+from typing import Callable, Set, Any
+
 
 
 class ChatHandler:
     def __init__(self) -> None:
+
+        user_functions: Set[Callable[...,Any]] = {
+            is_vip
+        }
+
+        functions = FunctionTool(user_functions)
+        toolset = ToolSet()
+        toolset.add(functions)
+        
 
         self.project = AIProjectClient(
             credential=DefaultAzureCredential(),
             endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/firstProject')
         
         self.agent_master = self.project.agents.get_agent("asst_auBBqrhcSppyJ1wMJyY5qdmK")
-        self.logging_agent = self.project.agents.get_agent("asst_23h0ZKTNIbJ99HzPqPRoVQUu")
+        self.project.agents.enable_auto_function_calls(toolset)
+        self.project.agents.update_agent(
+            agent_id=self.agent_master.id,
+            toolset=toolset
+        )
         self.thread = self.project.agents.threads.create()
     
     def trigger_api_post_request(self,url, payload):
