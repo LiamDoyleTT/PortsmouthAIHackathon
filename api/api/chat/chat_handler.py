@@ -1,10 +1,6 @@
 import os
 import requests
 
-from langchain_openai import AzureChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from api.search.search_handler import SearchHandler
-import json
 from types import SimpleNamespace
 
 
@@ -12,20 +8,16 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.agents.models import ListSortOrder
 
-search_handler = SearchHandler()
-
 
 class ChatHandler:
     def __init__(self) -> None:
-        self.llm = AzureChatOpenAI(
-            azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
-        )
 
         self.project = AIProjectClient(
             credential=DefaultAzureCredential(),
             endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/firstProject')
         
         self.agent_master = self.project.agents.get_agent("asst_auBBqrhcSppyJ1wMJyY5qdmK")
+        self.logging_agent = self.project.agents.get_agent("asst_23h0ZKTNIbJ99HzPqPRoVQUu")
         self.thread = self.project.agents.threads.create()
     
     def trigger_api_post_request(self,url, payload):
@@ -99,5 +91,11 @@ class ChatHandler:
     def get_chat_response(self, input_text):
 
         response = self.call_agent(self.agent_master.id, input_text)
+
+        return response
+
+    def get_chat_summary(self, input_text):
+
+        response = self.call_agent(self.logging_agent.id, input_text)
 
         return response

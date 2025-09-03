@@ -5,10 +5,8 @@ from fastapi import FastAPI, HTTPException, UploadFile, WebSocket, Request
 from pydantic import BaseModel
 
 from api.chat.chat_handler import ChatHandler
-from api.enrich.translation import TranslationHandler
-from api.enrich.audio_converter import AudioConverter
-from api.enrich.audio_transcriber import AudioTranscriber
 import azure.cognitiveservices.speech as speechsdk
+from api.logging.logging import save_summary
 
 import json
 import re
@@ -37,13 +35,15 @@ speech_config = speechsdk.SpeechConfig(
             region=os.environ.get("SPEECH_REGION")
         )
 
-audio_transcriber = AudioTranscriber(speech_config)
-translation_handler = TranslationHandler()
-
 @app.post("/api/process")
 async def process(request: ProcessRequest) -> ProcessResponse:
-    response_content = str(chat_handler.get_chat_response(request.body))
-    return ProcessResponse(response=response_content)
+    if "End Chat" in request.body:
+        summary = chat_handler.get_chat_summary(request.body)
+        save_summary(summary)
+        return ProcessResponse(response=f'Chat Ended. The following information has been logged: {summary}')
+    else:
+        response_content = str(chat_handler.get_chat_response(request.body))
+        return ProcessResponse(response=response_content)
 
 @app.post(path="/api/process-audio-file")
 async def process_audio_file(request: ProcessRequest) -> AudioProcessResponse:
