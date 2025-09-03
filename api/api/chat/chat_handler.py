@@ -1,10 +1,6 @@
 import os
 import requests
 
-from langchain_openai import AzureChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from api.search.search_handler import SearchHandler
-import json
 from types import SimpleNamespace
 from openai import AzureOpenAI
 
@@ -15,14 +11,9 @@ from api.actions.get_username import is_vip
 from typing import Callable, Set, Any
 
 
-search_handler = SearchHandler()
-
 
 class ChatHandler:
     def __init__(self) -> None:
-        self.llm = AzureChatOpenAI(
-            azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
-        )
 
         user_functions: Set[Callable[...,Any]] = {
             is_vip
@@ -37,7 +28,7 @@ class ChatHandler:
             credential=DefaultAzureCredential(),
             endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/firstProject')
         
-        self.agent_master = self.project.agents.get_agent("asst_T2rfXiGefNibf4qfFHMtFSYp")
+        self.agent_master = self.project.agents.get_agent("asst_auBBqrhcSppyJ1wMJyY5qdmK")
         self.project.agents.enable_auto_function_calls(toolset)
         self.project.agents.update_agent(
             agent_id=self.agent_master.id,
@@ -116,5 +107,11 @@ class ChatHandler:
     def get_chat_response(self, input_text):
 
         response = self.call_agent(self.agent_master.id, input_text)
+
+        return response
+
+    def get_chat_summary(self, input_text):
+
+        response = self.call_agent(self.logging_agent.id, input_text)
 
         return response
