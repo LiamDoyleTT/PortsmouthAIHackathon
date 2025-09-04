@@ -1,9 +1,6 @@
 import os
 import requests
 
-from types import SimpleNamespace
-from openai import AzureOpenAI
-
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.agents.models import ListSortOrder, FunctionTool, ToolSet
