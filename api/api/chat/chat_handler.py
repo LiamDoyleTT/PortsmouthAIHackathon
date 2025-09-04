@@ -1,9 +1,6 @@
 import os
 import requests
 
-from types import SimpleNamespace
-from openai import AzureOpenAI
-
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.agents.models import ListSortOrder, FunctionTool, ToolSet
@@ -84,10 +81,11 @@ class ChatHandler:
         return messages
 
     def call_agent(self, agent_id, input_text):
+        latest_message = str(self.parse_conversation(input_text)[-1])
         message = self.project.agents.messages.create(
             thread_id=self.thread.id,
             role="user",
-            content=input_text
+            content=latest_message
         )
 
         run = self.project.agents.runs.create_and_process(
