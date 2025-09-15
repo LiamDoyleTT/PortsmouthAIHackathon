@@ -1,36 +1,31 @@
 import os
 import requests
 
+from langchain_openai import AzureChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from api.search.search_handler import SearchHandler
+import json
+from types import SimpleNamespace
+
+
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
-from azure.ai.agents.models import ListSortOrder, FunctionTool, ToolSet
-from api.actions.get_username import is_vip
-from typing import Callable, Set, Any
+from azure.ai.agents.models import ListSortOrder
 
+search_handler = SearchHandler()
 
 
 class ChatHandler:
     def __init__(self) -> None:
-
-        user_functions: Set[Callable[...,Any]] = {
-            is_vip
-        }
-
-        functions = FunctionTool(user_functions)
-        toolset = ToolSet()
-        toolset.add(functions)
-        
+        self.llm = AzureChatOpenAI(
+            azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
+        )
 
         self.project = AIProjectClient(
             credential=DefaultAzureCredential(),
             endpoint=os.environ["AZURE_OPENAI_ENDPOINT"]+'api/projects/firstProject')
         
         self.agent_master = self.project.agents.get_agent("asst_auBBqrhcSppyJ1wMJyY5qdmK")
-        self.project.agents.enable_auto_function_calls(toolset)
-        self.project.agents.update_agent(
-            agent_id=self.agent_master.id,
-            toolset=toolset
-        )
         self.thread = self.project.agents.threads.create()
     
     def trigger_api_post_request(self,url, payload):
@@ -81,11 +76,10 @@ class ChatHandler:
         return messages
 
     def call_agent(self, agent_id, input_text):
-        latest_message = str(self.parse_conversation(input_text)[-1])
         message = self.project.agents.messages.create(
             thread_id=self.thread.id,
             role="user",
-            content=latest_message
+            content=input_text
         )
 
         run = self.project.agents.runs.create_and_process(
@@ -105,11 +99,5 @@ class ChatHandler:
     def get_chat_response(self, input_text):
 
         response = self.call_agent(self.agent_master.id, input_text)
-
-        return response
-
-    def get_chat_summary(self, input_text):
-
-        response = self.call_agent(self.logging_agent.id, input_text)
 
         return response
